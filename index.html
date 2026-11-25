@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EUROPA CHALLENGE</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#101b3b;color:white;text-align:center}
+header{background:linear-gradient(90deg,#6046e8,#168eea);padding:22px}
+h1{font-size:38px;margin:5px}main{padding:16px;max-width:1100px;margin:auto}
+.panel{background:#202e54;border-radius:16px;padding:18px;margin:15px auto}
+#map{height:430px;border-radius:12px;border:3px solid white}
+button,input,select{padding:12px;border-radius:9px;border:0;margin:5px;font-size:16px}
+button{background:#ffca28;font-weight:bold;cursor:pointer}button:hover{background:#ffe477}
+input{max-width:180px}
+#players{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.player{background:#354775;padding:10px;border-radius:10px}.player input{width:90%}
+#question{font-size:27px;font-weight:bold}
+#answers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.answer{background:#168eea;color:white;min-height:55px}
+#ranking{line-height:2;font-size:18px}#feedback{font-size:22px;font-weight:bold}
+.leaflet-container{background:#d9eafa}
+</style>
+</head>
+<body>
+<header><h1>🌍 EUROPA CHALLENGE</h1><h3>¡Demuestra que eres el rey de las capitales!</h3></header>
+<main>
+<section class="panel"><h2>👨‍🎓 LOS 27 JUGADORES</h2><p>Escribe el nombre de cada compañero:</p><div id="players"></div><button onclick="startGame()">🎮 EMPEZAR A JUGAR</button></section>
+<section class="panel"><h2>🗺️ MAPA DE EUROPA</h2><p>Explora los países y sus fronteras.</p><div id="map"></div><p id="mapStatus">Cargando mapa...</p></section>
+<section class="panel"><h2>🏆 TURNO DE JUEGO</h2><p id="turn">Pulsa empezar para jugar.</p><div id="question">¿Preparados?</div><div id="answers"></div><div id="feedback"></div><p id="score"></p><button onclick="nextQuestion()">➡️ SIGUIENTE PREGUNTA</button></section>
+<section class="panel"><h2>🥇 CLASIFICACIÓN</h2><div id="ranking">Todavía no hay puntos.</div></section>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const capitals=[["Albania","Tirana"],["Alemania","Berlín"],["Andorra","Andorra la Vieja"],["Austria","Viena"],["Bélgica","Bruselas"],["Bielorrusia","Minsk"],["Bosnia y Herzegovina","Sarajevo"],["Bulgaria","Sofía"],["Chipre","Nicosia"],["Croacia","Zagreb"],["Dinamarca","Copenhague"],["Eslovaquia","Bratislava"],["Eslovenia","Liubliana"],["España","Madrid"],["Estonia","Tallin"],["Finlandia","Helsinki"],["Francia","París"],["Grecia","Atenas"],["Hungría","Budapest"],["Irlanda","Dublín"],["Islandia","Reikiavik"],["Italia","Roma"],["Letonia","Riga"],["Liechtenstein","Vaduz"],["Lituania","Vilna"],["Luxemburgo","Luxemburgo"],["Macedonia del Norte","Skopie"],["Malta","La Valeta"],["Moldavia","Chisináu"],["Mónaco","Mónaco"],["Montenegro","Podgorica"],["Noruega","Oslo"],["Países Bajos","Ámsterdam"],["Polonia","Varsovia"],["Portugal","Lisboa"],["Reino Unido","Londres"],["República Checa","Praga"],["Rumanía","Bucarest"],["Rusia","Moscú"],["San Marino","San Marino"],["Serbia","Belgrado"],["Suecia","Estocolmo"],["Suiza","Berna"],["Turquía","Ankara"],["Ucrania","Kiev"],["Ciudad del Vaticano","Ciudad del Vaticano"]];
+let students=[],current=0,question=null,answered=false,map,geoLayer;
+const playersBox=document.getElementById("players");
+for(let i=0;i<27;i++){playersBox.innerHTML+=`<div class="player"><b>Jugador ${i+1}</b><br><input id="name${i}" placeholder="Nombre..." value="Alumno ${i+1}"><div id="points${i}">⭐ 0 puntos</div></div>`}
+function startGame(){students=[];for(let i=0;i<27;i++){students.push({name:document.getElementById("name"+i).value||"Alumno "+(i+1),points:0})}current=0;nextQuestion();updateRanking()}
+function shuffle(arr){return [...arr].sort(()=>Math.random()-0.5)}
+function nextQuestion(){if(students.length===0){document.getElementById("question").textContent="Primero pulsa EMPEZAR A JUGAR";return}answered=false;question=capitals[Math.floor(Math.random()*capitals.length)];document.getElementById("turn").textContent="🎮 Turno de: "+students[current].name;document.getElementById("question").textContent="¿Cuál es la capital de "+question[0]+"?";document.getElementById("feedback").textContent="";document.getElementById("score").textContent="";let wrong=shuffle(capitals.filter(c=>c[1]!==question[1])).slice(0,3).map(c=>c[1]);let options=shuffle([question[1],...wrong]);let box=document.getElementById("answers");box.innerHTML="";options.forEach(answer=>{let btn=document.createElement("button");btn.className="answer";btn.textContent=answer;btn.onclick=()=>checkAnswer(answer);box.appendChild(btn)})}
+function checkAnswer(answer){if(answered)return;answered=true;let correct=answer===question[1];if(correct){students[current].points+=10;document.getElementById("feedback").textContent="🎉 ¡CORRECTO! +10 puntos"}else{document.getElementById("feedback").textContent="❌ ¡Casi! La respuesta era "+question[1]}document.getElementById("score").textContent="⭐ Puntos: "+students[current].points;document.getElementById("answers").querySelectorAll("button").forEach(b=>b.disabled=true);document.getElementById("points"+current).textContent="⭐ "+students[current].points+" puntos";updateRanking();current=(current+1)%students.length}
+function updateRanking(){let sorted=[...students].sort((a,b)=>b.points-a.points);document.getElementById("ranking").innerHTML=sorted.map((s,i)=>["🥇","🥈","🥉"][i]||(i+1)+".").map((medal,i)=>medal+" "+sorted[i].name+" — "+sorted[i].points+" puntos").join("<br>")}
+map=L.map("map").setView([53,15],3.7);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson").then(response=>response.json()).then(data=>{const europeanNames=["Albania","Andorra","Austria","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Cyprus","Czechia","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Iceland","Ireland","Italy","Latvia","Liechtenstein","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Vatican City"];let europe=data.features.filter(f=>europeanNames.includes(f.properties.ADMIN||f.properties.name));geoLayer=L.geoJSON(europe,{style:{color:"#172b50",weight:1.8,fillColor:"#36a5e8",fillOpacity:0.8},onEachFeature:(feature,layer)=>{let name=feature.properties.ADMIN||feature.properties.name;layer.bindTooltip(name);layer.on("mouseover",function(){this.setStyle({fillColor:"#ffca28",weight:3})});layer.on("mouseout",function(){geoLayer.resetStyle(this)})}}).addTo(map);map.fitBounds(geoLayer.getBounds());document.getElementById("mapStatus").textContent="¡Mapa de Europa cargado! Toca los países para ver sus nombres."}).catch(()=>{document.getElementById("mapStatus").textContent="No se pudo cargar el mapa. Comprueba tu conexión a Internet."});
+</script>
+</body>
+</html>
