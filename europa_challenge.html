@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>EUROPA CHALLENGE</title>
+<style>
+body{font-family:Arial;background:#eaf2ff;text-align:center;color:#17336b;margin:0}
+header{background:#17336b;color:white;padding:20px}
+h1{font-size:42px}
+main{background:white;margin:20px auto;padding:20px;border-radius:15px;max-width:850px}
+button{padding:13px;margin:7px;border:0;border-radius:10px;background:#2463eb;color:white;font-size:17px;cursor:pointer}
+button:disabled{opacity:.5}
+input{padding:10px;margin:5px;width:180px}
+#game{display:none}
+.answer{display:block;width:85%;margin:10px auto}
+#feedback{font-size:20px;font-weight:bold}
+</style>
+</head>
+<body>
+<header>
+<p>CREADO POR RAYAN</p>
+<h1>🌍 EUROPA CHALLENGE</h1>
+<h3>¡Demuestra lo que sabes de Europa!</h3>
+</header>
+<main id="setup">
+<h2>👥 Los 27 participantes</h2>
+<div id="names"></div>
+<button id="start">EMPEZAR</button>
+</main>
+<main id="game">
+<h2 id="turn"></h2>
+<h2 id="question"></h2>
+<div id="answers"></div>
+<p id="feedback"></p>
+<div id="jokers"></div>
+<button id="next">Siguiente jugador ➜</button>
+</main>
+<main>
+<h2>🏆 CLASIFICACIÓN</h2>
+<div id="ranking">¡La clasificación aparecerá al empezar!</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const countries=[
+["España","Madrid"],["Francia","París"],["Italia","Roma"],
+["Alemania","Berlín"],["Portugal","Lisboa"],["Grecia","Atenas"],
+["Bélgica","Bruselas"],["Países Bajos","Ámsterdam"],["Austria","Viena"],
+["Polonia","Varsovia"],["Irlanda","Dublín"],["Suecia","Estocolmo"],
+["Noruega","Oslo"],["Finlandia","Helsinki"],["Dinamarca","Copenhague"],
+["Suiza","Berna"],["Ucrania","Kiev"],["Rumanía","Bucarest"],
+["Bulgaria","Sofía"],["Croacia","Zagreb"],["Serbia","Belgrado"],
+["Hungría","Budapest"],["Chequia","Praga"],["Eslovaquia","Bratislava"],
+["Eslovenia","Liubliana"],["Estonia","Tallin"],["Letonia","Riga"],
+["Lituania","Vilna"],["Islandia","Reikiavik"],["Albania","Tirana"],
+["Luxemburgo","Luxemburgo"],["Malta","La Valeta"],["Chipre","Nicosia"],
+["Moldavia","Chisináu"],["Montenegro","Podgorica"],["Andorra","Andorra la Vieja"],
+["Mónaco","Mónaco"],["San Marino","San Marino"],
+["Liechtenstein","Vaduz"],["Bielorrusia","Minsk"],
+["Macedonia del Norte","Skopie"],["Bosnia y Herzegovina","Sarajevo"],
+["Kosovo","Pristina"],["Rusia","Moscú"],["Reino Unido","Londres"],
+["Ciudad del Vaticano","Ciudad del Vaticano"]
+];
+let players=[],turn=0,current=null,answered=false;
+let rayanJokers=3;
+for(let i=1;i<=27;i++){
+ const input=document.createElement("input");
+ input.id="p"+i;
+ input.placeholder="Participante "+i;
+ $("names").appendChild(input);
+}
+$("start").addEventListener("click",start);
+$("next").addEventListener("click",next);
+function start(){
+ players=[];
+ for(let i=1;i<=27;i++){
+ const name=$("p"+i).value.trim();
+ players.push({name:name||"Jugador "+i,score:0});
+ }
+ $("setup").style.display="none";
+ $("game").style.display="block";
+ turn=0;
+ ask();
+ ranking();
+}
+function ask(){
+ answered=false;
+ $("feedback").textContent="";
+ $("next").disabled=true;
+ $("turn").textContent="Turno de "+players[turn].name+" | "+players[turn].score+" puntos";
+ current=countries[Math.floor(Math.random()*countries.length)];
+ $("question").textContent="¿Cuál es la capital de "+current[0]+"?";
+ const options=[current[1]];
+ while(options.length<4){
+ const city=countries[Math.floor(Math.random()*countries.length)][1];
+ if(!options.includes(city))options.push(city);
+ }
+ options.sort(()=>Math.random()-.5);
+ $("answers").innerHTML="";
+ options.forEach(city=>{
+ const b=document.createElement("button");
+ b.className="answer";
+ b.textContent=city;
+ b.addEventListener("click",()=>check(city));
+ $("answers").appendChild(b);
+ });
+ showJokers();
+}
+function check(city){
+ if(answered)return;
+ answered=true;
+ if(city===current[1]){
+ players[turn].score+=10;
+ $("feedback").textContent="¡CORRECTO! +10 puntos 🎉";
+ $("feedback").style.color="green";
+ }else{
+ $("feedback").textContent="La capital es "+current[1];
+ $("feedback").style.color="red";
+ }
+ Array.from($("answers").children).forEach(b=>{
+ b.disabled=true;
+ if(b.textContent===current[1])b.style.background="#168653";
+ });
+ $("next").disabled=false;
+ ranking();
+ showJokers();
+}
+function next(){
+ if(!answered)return;
+ turn=(turn+1)%players.length;
+ ask();
+}
+function showJokers(){
+ $("jokers").innerHTML="";
+ if(players[turn].name.trim().toLowerCase()!=="rayan"||rayanJokers===0)return;
+ const labels=["💡 Pista","🔄 Cambiar pregunta","🛟 Salvavidas"];
+ labels.forEach((label,index)=>{
+ const b=document.createElement("button");
+ b.textContent=label+" ("+rayanJokers+")";
+ b.disabled=answered;
+ b.addEventListener("click",()=>{
+ if(rayanJokers===0)return;
+ rayanJokers--;
+ if(index===0){
+ $("feedback").textContent="Pista: empieza por "+current[1][0];
+ }else if(index===1){
+ ask();
+ }else{
+ $("feedback").textContent="¡Salvavidas utilizado! ¡Tú puedes!";
+ }
+ showJokers();
+ });
+ $("jokers").appendChild(b);
+ });
+}
+function ranking(){
+ const sorted=players.slice().sort((a,b)=>b.score-a.score);
+ $("ranking").innerHTML=sorted.map((p,i)=>
+ (i+1)+". "+p.name+" — "+p.score+" puntos"
+ ).join("<br>");
+}
+</script>
+</body>
+</html>
